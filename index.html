@@ -343,7 +343,10 @@
 <p>disruptor使用RingBuffer实现，而RingBuffer相比于链表的优势有：</p>
 <p>（1）RingBuffer使用数组实现，访问比链表快，并且由于CPU缓冲行会加载相邻数据的特性，数组的元素在硬件级别是会被预加载的。但同时由于CPU缓冲行的这个特性从而导致了伪共享问题，不过disruptor使用了缓冲行填充技术解决伪共享。</p>
 <p>（2）RingBuffer可以预先分配堆内存空间，数组元素保证一直有效。当生产者生产物料，只需要拿到预先创建好的RingBuffer元素实例直接进行设置，从而减少gc的产生。</p>
-<h4 id="ArrayBlockingQueue-vs-Disruptor"><a href="#ArrayBlockingQueue-vs-Disruptor" class="headerlink" title="ArrayBlockingQueue vs Disruptor"></a>ArrayBlockingQueue vs Disruptor</h4><p>在disruptor官方说明文档中，它做了一个对比实验：<br>    · 生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次<br>    · CPU ： 2.2Ghz Core i7-2720QM<br>    · OS：    Ubuntu 11.04<br>| | Array Blocking Queue (ns) | Disruptor (ns) | |:|:——————————|:——————-| | Mean Latency | 32,757 | 52 | | 99% observations less than | 2,097,152 | 128 | | 99.99% observations less than | 4,194,304 | 8,192 |</p>
+<h4 id="ArrayBlockingQueue-vs-Disruptor"><a href="#ArrayBlockingQueue-vs-Disruptor" class="headerlink" title="ArrayBlockingQueue vs Disruptor"></a>ArrayBlockingQueue vs Disruptor</h4><p>在disruptor官方说明文档中，它做了一个对比实验：</p>
+<blockquote>
+<p>   · 生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次<br>   · CPU ： 2.2Ghz Core i7-2720QM<br>   · OS：    Ubuntu 11.04<br>| | Array Blocking Queue (ns) | Disruptor (ns) |<br>|:|:——————————|:——————-|<br>| Mean Latency | 32,757 | 52 |<br>| 99% observations less than | 2,097,152 | 128 |<br>| 99.99% observations less than | 4,194,304 | 8,192 |</p>
+</blockquote>
 <h2 id="3-该如何使用你，我的disruptor？"><a href="#3-该如何使用你，我的disruptor？" class="headerlink" title="3. 该如何使用你，我的disruptor？"></a>3. 该如何使用你，我的disruptor？</h2><p>在这次search-sync组件的优化过程，使用disruptor替换LinkedBlockingQueue实现Single-Producer ~ Multi-Consumer模型</p>
 <h4 id="模型实现"><a href="#模型实现" class="headerlink" title="模型实现"></a>模型实现</h4><blockquote>
 <ul>
