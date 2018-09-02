@@ -88,7 +88,7 @@
 <meta property="og:locale" content="default">
 <meta property="og:image" content="https://raw.githubusercontent.com/RubicPhil/picture/master/LinkedBlockingQueue.png">
 <meta property="og:image" content="https://raw.githubusercontent.com/RubicPhil/picture/master/disruptor.png">
-<meta property="og:updated_time" content="2018-09-02T08:08:06.922Z">
+<meta property="og:updated_time" content="2018-09-02T08:19:53.295Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="高性能无锁队列：disruptor">
 <meta name="twitter:description" content="1. 简要描述disruptor是一个高性能的队列，最初是应用在LMAX架构中。我们可以把disruptor用在生产者-消费者问题以获取高效地处理和高吞吐量。现在disruptor版本已稳定在3.0，请尽量使用版本3.0，因为低版本的api和3.0几乎不兼容，并且版本3.0提供更多生产者-消费者设计支持。 2. 我们不一样：阻塞队列 vs Disruptor(稳) 稳健派：BlockingQueu">
@@ -347,9 +347,39 @@
 <p>（2）RingBuffer可以预先分配堆内存空间，数组元素保证一直有效。当生产者生产物料，只需要拿到预先创建好的RingBuffer元素实例直接进行设置，从而减少gc的产生。</p>
 <h4 id="ArrayBlockingQueue-vs-Disruptor"><a href="#ArrayBlockingQueue-vs-Disruptor" class="headerlink" title="ArrayBlockingQueue vs Disruptor"></a>ArrayBlockingQueue vs Disruptor</h4><p>在disruptor官方说明文档中，它做了一个对比实验：</p>
 <blockquote>
-<p>   · 生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次<br>   · CPU ： 2.2Ghz Core i7-2720QM<br>   · OS：    Ubuntu 11.04<br>| | Array Blocking Queue (ns) | Disruptor (ns) |<br>|:|:——————————|:——————-|<br>| Mean Latency | 32,757 | 52 |<br>| 99% observations less than | 2,097,152 | 128 |<br>| 99.99% observations less than | 4,194,304 | 8,192 |</p>
+<ul>
+<li>生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次</li>
+<li>CPU ： 2.2Ghz Core i7-2720QM</li>
+<li>OS：    Ubuntu 11.04</li>
+</ul>
 </blockquote>
-<h2 id="3-该如何使用你，我的disruptor？"><a href="#3-该如何使用你，我的disruptor？" class="headerlink" title="3. 该如何使用你，我的disruptor？"></a>3. 该如何使用你，我的disruptor？</h2><p>在这次search-sync组件的优化过程，使用disruptor替换LinkedBlockingQueue实现Single-Producer ~ Multi-Consumer模型</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>Array Blocking Queue (ns)</th>
+<th>Disruptor (ns)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>平均延迟</td>
+<td>32,757</td>
+<td>52</td>
+</tr>
+<tr>
+<td>99%的观测值低于</td>
+<td>2,097,152</td>
+<td>128</td>
+</tr>
+<tr>
+<td>99.99%的观测值低于</td>
+<td>4,194,304</td>
+<td>8,192</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-该如何使用你，我的disruptor？"><a href="#3-该如何使用你，我的disruptor？" class="headerlink" title="3. 该如何使用你，我的disruptor？"></a>3. 该如何使用你，我的disruptor？</h2><p>这里简单介绍：如何使用disruptor实现Single-Producer ~ Multi-Consumer模型</p>
 <h4 id="模型实现"><a href="#模型实现" class="headerlink" title="模型实现"></a>模型实现</h4><blockquote>
 <ul>
 <li>自定义Event，作为生产者-消费者模型中的物料;同时实现EventFactory&lt;?&gt;接口，作为物料的生成工具。</li>
@@ -409,7 +439,14 @@ for (int i = 0; i &lt; consumerNum; i++) {
 
 disruptor.handleEventsWithWorkerPool(eventConsumers);
 disruptor.start();
-</code></pre>
+</code></pre><h2 id="4-推荐阅读"><a href="#4-推荐阅读" class="headerlink" title="4. 推荐阅读"></a>4. 推荐阅读</h2><blockquote>
+<ul>
+<li><a href="https://martinfowler.com/articles/lmax.html" target="_blank" rel="noopener">LMAX架构</a></li>
+<li><a href="http://ifeve.com/disruptor-dsl/" target="_blank" rel="noopener">LMAX Disruptor——一个高性能、低延迟且简单的框架</a></li>
+<li><a href="https://tech.meituan.com/disruptor.html" target="_blank" rel="noopener">高性能队列——Disruptor</a></li>
+</ul>
+</blockquote>
+
       
     </div>
     
@@ -555,7 +592,7 @@ disruptor.start();
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-简要描述"><span class="nav-number">1.</span> <span class="nav-text">1. 简要描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-我们不一样：阻塞队列-vs-Disruptor"><span class="nav-number">2.</span> <span class="nav-text">2. 我们不一样：阻塞队列 vs Disruptor</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#稳-稳健派：BlockingQueue"><span class="nav-number">2.0.1.</span> <span class="nav-text">(稳) 稳健派：BlockingQueue</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-锁是慢的"><span class="nav-number">2.0.1.1.</span> <span class="nav-text">(1) 锁是慢的</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#快-别人家的孩子：Disruptor"><span class="nav-number">2.0.2.</span> <span class="nav-text">(快) 别人家的孩子：Disruptor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ArrayBlockingQueue-vs-Disruptor"><span class="nav-number">2.0.3.</span> <span class="nav-text">ArrayBlockingQueue vs Disruptor</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-该如何使用你，我的disruptor？"><span class="nav-number">3.</span> <span class="nav-text">3. 该如何使用你，我的disruptor？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#模型实现"><span class="nav-number">3.0.1.</span> <span class="nav-text">模型实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#部分实现代码"><span class="nav-number">3.0.2.</span> <span class="nav-text">部分实现代码</span></a></li></ol></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-简要描述"><span class="nav-number">1.</span> <span class="nav-text">1. 简要描述</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-我们不一样：阻塞队列-vs-Disruptor"><span class="nav-number">2.</span> <span class="nav-text">2. 我们不一样：阻塞队列 vs Disruptor</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#稳-稳健派：BlockingQueue"><span class="nav-number">2.0.1.</span> <span class="nav-text">(稳) 稳健派：BlockingQueue</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#1-锁是慢的"><span class="nav-number">2.0.1.1.</span> <span class="nav-text">(1) 锁是慢的</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#快-别人家的孩子：Disruptor"><span class="nav-number">2.0.2.</span> <span class="nav-text">(快) 别人家的孩子：Disruptor</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#ArrayBlockingQueue-vs-Disruptor"><span class="nav-number">2.0.3.</span> <span class="nav-text">ArrayBlockingQueue vs Disruptor</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#3-该如何使用你，我的disruptor？"><span class="nav-number">3.</span> <span class="nav-text">3. 该如何使用你，我的disruptor？</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#模型实现"><span class="nav-number">3.0.1.</span> <span class="nav-text">模型实现</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#部分实现代码"><span class="nav-number">3.0.2.</span> <span class="nav-text">部分实现代码</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-推荐阅读"><span class="nav-number">4.</span> <span class="nav-text">4. 推荐阅读</span></a></li></ol></div>
             
 
           </div>

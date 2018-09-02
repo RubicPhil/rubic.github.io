@@ -345,9 +345,39 @@
 <p>（2）RingBuffer可以预先分配堆内存空间，数组元素保证一直有效。当生产者生产物料，只需要拿到预先创建好的RingBuffer元素实例直接进行设置，从而减少gc的产生。</p>
 <h4 id="ArrayBlockingQueue-vs-Disruptor"><a href="#ArrayBlockingQueue-vs-Disruptor" class="headerlink" title="ArrayBlockingQueue vs Disruptor"></a>ArrayBlockingQueue vs Disruptor</h4><p>在disruptor官方说明文档中，它做了一个对比实验：</p>
 <blockquote>
-<p>   · 生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次<br>   · CPU ： 2.2Ghz Core i7-2720QM<br>   · OS：    Ubuntu 11.04<br>| | Array Blocking Queue (ns) | Disruptor (ns) |<br>|:|:——————————|:——————-|<br>| Mean Latency | 32,757 | 52 |<br>| 99% observations less than | 2,097,152 | 128 |<br>| 99.99% observations less than | 4,194,304 | 8,192 |</p>
+<ul>
+<li>生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次</li>
+<li>CPU ： 2.2Ghz Core i7-2720QM</li>
+<li>OS：    Ubuntu 11.04</li>
+</ul>
 </blockquote>
-<h2 id="3-该如何使用你，我的disruptor？"><a href="#3-该如何使用你，我的disruptor？" class="headerlink" title="3. 该如何使用你，我的disruptor？"></a>3. 该如何使用你，我的disruptor？</h2><p>在这次search-sync组件的优化过程，使用disruptor替换LinkedBlockingQueue实现Single-Producer ~ Multi-Consumer模型</p>
+<table>
+<thead>
+<tr>
+<th>指标</th>
+<th>Array Blocking Queue (ns)</th>
+<th>Disruptor (ns)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>平均延迟</td>
+<td>32,757</td>
+<td>52</td>
+</tr>
+<tr>
+<td>99%的观测值低于</td>
+<td>2,097,152</td>
+<td>128</td>
+</tr>
+<tr>
+<td>99.99%的观测值低于</td>
+<td>4,194,304</td>
+<td>8,192</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-该如何使用你，我的disruptor？"><a href="#3-该如何使用你，我的disruptor？" class="headerlink" title="3. 该如何使用你，我的disruptor？"></a>3. 该如何使用你，我的disruptor？</h2><p>这里简单介绍：如何使用disruptor实现Single-Producer ~ Multi-Consumer模型</p>
 <h4 id="模型实现"><a href="#模型实现" class="headerlink" title="模型实现"></a>模型实现</h4><blockquote>
 <ul>
 <li>自定义Event，作为生产者-消费者模型中的物料;同时实现EventFactory&lt;?&gt;接口，作为物料的生成工具。</li>
@@ -407,7 +437,14 @@ for (int i = 0; i &lt; consumerNum; i++) {
 
 disruptor.handleEventsWithWorkerPool(eventConsumers);
 disruptor.start();
-</code></pre>
+</code></pre><h2 id="4-推荐阅读"><a href="#4-推荐阅读" class="headerlink" title="4. 推荐阅读"></a>4. 推荐阅读</h2><blockquote>
+<ul>
+<li><a href="https://martinfowler.com/articles/lmax.html" target="_blank" rel="noopener">LMAX架构</a></li>
+<li><a href="http://ifeve.com/disruptor-dsl/" target="_blank" rel="noopener">LMAX Disruptor——一个高性能、低延迟且简单的框架</a></li>
+<li><a href="https://tech.meituan.com/disruptor.html" target="_blank" rel="noopener">高性能队列——Disruptor</a></li>
+</ul>
+</blockquote>
+
           
         
       
