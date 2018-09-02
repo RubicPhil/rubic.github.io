@@ -333,12 +333,48 @@
             <h2 id="1-简要描述"><a href="#1-简要描述" class="headerlink" title="1. 简要描述"></a>1. 简要描述</h2><p>disruptor是一个高性能的队列，最初是应用在<a href="https://martinfowler.com/articles/lmax.html" target="_blank" rel="noopener">LMAX</a>架构中。我们可以把disruptor用在生产者-消费者问题以获取高效地处理和高吞吐量。现在disruptor版本已稳定在3.0，请尽量使用版本3.0，因为低版本的api和3.0几乎不兼容，并且版本3.0提供更多生产者-消费者设计<br>支持。</p>
 <h2 id="2-我们不一样：阻塞队列-vs-Disruptor"><a href="#2-我们不一样：阻塞队列-vs-Disruptor" class="headerlink" title="2. 我们不一样：阻塞队列 vs Disruptor"></a>2. 我们不一样：阻塞队列 vs Disruptor</h2><h4 id="稳-稳健派：BlockingQueue"><a href="#稳-稳健派：BlockingQueue" class="headerlink" title="(稳) 稳健派：BlockingQueue"></a>(稳) 稳健派：BlockingQueue</h4><p>阻塞队列是一个稳健派的设计：阻塞队列是一个FIFO队列，生产者(Producer)往队列里发布(publish)一件物料时，消费者(Consumer)能获得通知；如果没有物料时，消费者被堵塞，直到生产者发布了新的物料，防止生产者生产速度过快，导致内存溢出（OOM）。</p>
 <p>平常我们实现生产者-消费者模型时，一般会选用阻塞队列ArrayBlockingQueue来实现。当数据量上升到模型无法处理时，这时阻塞队列的“稳健”操作开始带来了负面影响：</p>
-<h5 id="1-锁是慢的"><a href="#1-锁是慢的" class="headerlink" title="(1) 锁是慢的"></a>(1) 锁是慢的</h5><p>~ &gt;<br>~ &gt; 加锁时：线程会因为获取不到锁而被阻塞挂起；</p>
+<h5 id="锁是慢的"><a href="#锁是慢的" class="headerlink" title="锁是慢的"></a>锁是慢的</h5><p>~ &gt; 加锁时：线程会因为获取不到锁而被阻塞挂起；</p>
 <p>~ &gt; 锁释放时：阻塞的线程会被唤醒；而整个过程具有大量的时间消耗。</p>
-<pre><code>· 
-</code></pre><p><img src="https://raw.githubusercontent.com/RubicPhil/picture/master/LinkedBlockingQueue.png" alt="image"></p>
+<p>在disruptor论文中讲述一个实验：</p>
+<blockquote>
+<ul>
+<li>测试程序中调用了一个函数，该函数会对一个64位计数器循环自增5亿次；</li>
+</ul>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>耗时（ms）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>单线程无锁</td>
+<td>300</td>
+</tr>
+<tr>
+<td>单线程加锁</td>
+<td>10000</td>
+</tr>
+<tr>
+<td>两个线程加锁</td>
+<td>224000</td>
+</tr>
+</tbody>
+</table>
+<p>从实验中可以看出并发环境下锁保证了线程安全，却带来了糟糕的性能表现。</p>
+<h4 id="伪共享问题"><a href="#伪共享问题" class="headerlink" title="伪共享问题"></a>伪共享问题</h4><p><img src="https://raw.githubusercontent.com/RubicPhil/picture/master/LinkedBlockingQueue.png" alt="image"></p>
 <h4 id="快-别人家的孩子：Disruptor"><a href="#快-别人家的孩子：Disruptor" class="headerlink" title="(快) 别人家的孩子：Disruptor"></a>(快) 别人家的孩子：Disruptor</h4><p>Disruptor不仅同样能完成阻塞队列的功能，而且Disruptor还能做的更多。</p>
-<p>disruptor：<br>~ &gt;<br>~ &gt;- 无锁设计，通过CPU指令级别的CAS操作保证线程安全，同时大大提高处理速度；<br>~ &gt;- 提供了良好的并发编程接口，适应多种场景：消费者既可以并行处理，也可以消费同一个，还可以相互依赖消费；<br>~ &gt;- 底层的极度优化：缓冲行解决伪共享问题、预先分配内存空间等。</p>
+<p>disruptor：</p>
+<blockquote>
+<ul>
+<li>无锁设计，通过CPU指令级别的CAS操作保证线程安全，同时大大提高处理速度；</li>
+<li>缓冲行填充解决伪共享问题；</li>
+<li>提供了良好的并发编程接口，适应多种场景：消费者既可以并行处理，也可以消费同一个，还可以相互依赖消费；</li>
+<li>底层的极度优化：缓冲行解决伪共享问题、预先分配内存空间等。</li>
+</ul>
+</blockquote>
 <p><img src="https://raw.githubusercontent.com/RubicPhil/picture/master/disruptor.png" alt="image"></p>
 <p>disruptor使用RingBuffer实现，而RingBuffer相比于链表的优势有：</p>
 <p>（1）RingBuffer使用数组实现，访问比链表快，并且由于CPU缓冲行会加载相邻数据的特性，数组的元素在硬件级别是会被预加载的。但同时由于CPU缓冲行的这个特性从而导致了伪共享问题，不过disruptor使用了缓冲行填充技术解决伪共享。</p>
@@ -437,13 +473,7 @@ for (int i = 0; i &lt; consumerNum; i++) {
 
 disruptor.handleEventsWithWorkerPool(eventConsumers);
 disruptor.start();
-</code></pre><h2 id="4-推荐阅读"><a href="#4-推荐阅读" class="headerlink" title="4. 推荐阅读"></a>4. 推荐阅读</h2><blockquote>
-<ul>
-<li><a href="https://martinfowler.com/articles/lmax.html" target="_blank" rel="noopener">LMAX架构</a></li>
-<li><a href="http://ifeve.com/disruptor-dsl/" target="_blank" rel="noopener">LMAX Disruptor——一个高性能、低延迟且简单的框架</a></li>
-<li><a href="https://tech.meituan.com/disruptor.html" target="_blank" rel="noopener">高性能队列——Disruptor</a></li>
-</ul>
-</blockquote>
+</code></pre><h2 id="4-推荐阅读"><a href="#4-推荐阅读" class="headerlink" title="4. 推荐阅读"></a>4. 推荐阅读</h2><p>  <a href="https://martinfowler.com/articles/lmax.html" target="_blank" rel="noopener">LMAX架构</a><br>  <a href="http://ifeve.com/disruptor-dsl/" target="_blank" rel="noopener">LMAX Disruptor——一个高性能、低延迟且简单的框架</a><br>  <a href="https://tech.meituan.com/disruptor.html" target="_blank" rel="noopener">高性能队列——Disruptor</a></p>
 
           
         
