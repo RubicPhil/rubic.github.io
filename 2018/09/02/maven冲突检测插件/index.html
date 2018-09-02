@@ -86,7 +86,7 @@
 <meta property="og:site_name" content="rubic&#39;s blog">
 <meta property="og:description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验多种冲突。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息实例（MavenProject）,在设定好的过滤规">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-09-02T07:07:56.535Z">
+<meta property="og:updated_time" content="2018-09-02T07:09:06.495Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="maven冲突检测插件">
 <meta name="twitter:description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验多种冲突。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息实例（MavenProject）,在设定好的过滤规">
@@ -351,7 +351,7 @@
 <h4 id="此插件如何检测第一种冲突呢？"><a href="#此插件如何检测第一种冲突呢？" class="headerlink" title="此插件如何检测第一种冲突呢？"></a>此插件如何检测第一种冲突呢？</h4><p>扫描客户工程所有依赖的jar包，记录每个jar包对应的版本号，如果同一个jar包出现了多个不同的version，则说明发生了第一类冲突</p>
 <h4 id="第二类冲突：同一个类出现在多个不同Jar包中"><a href="#第二类冲突：同一个类出现在多个不同Jar包中" class="headerlink" title="第二类冲突：同一个类出现在多个不同Jar包中"></a>第二类冲突：同一个类出现在多个不同Jar包中</h4><p>  同样的类出现在了应用程序所依赖的两个及以上的不同Jar包中，这会导致什么问题呢？我们知道，同一个类加载器对于同一个类只会加载一次（多个不同类加载器就另说了，这也是解决Jar包冲突的一个思路），那么当一个类出现在了多个Jar包中，假设有A 、 B 、 C 等，由于Jar包依赖的路径长短、声明的先后顺序或文件系统的文件加载顺序等原因，类加载器首先从Jar包A 中加载了该类后，就不会加载其余Jar包中的这个类了，那么问题来了：如果应用程序此时需要的是Jar包 B 中的类版本，并且该类在Jar包A 和 B 中有差异（方法不同、成员不同等等），而JVM却加载了Jar包 A 的中的类版本，与期望不一致，自然就会出现各种诡异的问题。</p>
 <p>  同一个类 M 出现在了多个依赖的Jar包中，为了叙述方便，假设还是两个： A 和 B；Jar包 A 和 B 中的类 M 有差异，无论是方法签名不同也好，成员变量不同也好，只要可以造成实际加载的类的行为和期望不一致都行。如果说加载的类 M 不是所期望的版本，即加载了错误的Jar包，就可能会导致出现ClassNotFoundException。<br>  如果说Jar包A 和 B 中的类M完全一样，那么类加载器无论先加载哪个Jar包，得到的都是同样版本的类 M ，不会有任何影响，也就不会出现Jar包冲突带来的诡异问题。</p>
-<h4 id="此插件怎么检测第二种冲突呢？"><a href="#此插件怎么检测第二种冲突呢？" class="headerlink" title="此插件怎么检测第二种冲突呢？"></a>此插件怎么检测第二种冲突呢？</h4><p>通过扫描Jar包中的class，记录每个class对应的Jar包列表，如果有多个即是冲突了!</p>
+<h4 id="此插件怎么检测第二种冲突呢？"><a href="#此插件怎么检测第二种冲突呢？" class="headerlink" title="此插件怎么检测第二种冲突呢？"></a>此插件怎么检测第二种冲突呢？</h4><p>通过扫描每一个客户工程依赖的jar包中的class列表，记录每个class对应的jar包列表，如果对应多个jar包，就表明类冲突了!</p>
 <h3 id="插件工作流程"><a href="#插件工作流程" class="headerlink" title="插件工作流程"></a>插件工作流程</h3><p>（1）创建plexus容器，并启动容器。</p>
 <p>（2）通过Maven Project Builder读取客户工程pom.xml文件，生成MavenProject和MavenSession。</p>
 <p>（3）容器在对应的生命周期创建配置的maven-enforcer-plugin Mojo，进行依赖注入MavenProject、MavenSession等属性。</p>
