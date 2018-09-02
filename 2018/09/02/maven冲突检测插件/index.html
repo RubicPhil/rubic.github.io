@@ -79,17 +79,17 @@
 
 
 
-<meta name="description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息（maven-project）,在设定好的过滤规则（Enf">
+<meta name="description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验多种冲突。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息实例（MavenProject）,在设定好的过滤规">
 <meta property="og:type" content="article">
 <meta property="og:title" content="maven冲突检测插件">
 <meta property="og:url" content="http://yoursite.com/2018/09/02/maven冲突检测插件/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息（maven-project）,在设定好的过滤规则（Enf">
+<meta property="og:description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验多种冲突。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息实例（MavenProject）,在设定好的过滤规">
 <meta property="og:locale" content="default">
-<meta property="og:updated_time" content="2018-09-02T06:49:07.381Z">
+<meta property="og:updated_time" content="2018-09-02T06:54:57.782Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="maven冲突检测插件">
-<meta name="twitter:description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息（maven-project）,在设定好的过滤规则（Enf">
+<meta name="twitter:description" content="之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验多种冲突。 maven-enforce-plugin工作的大体流程通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息实例（MavenProject）,在设定好的过滤规">
 
 
 
@@ -299,17 +299,15 @@
       
 
       
-        <p>之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验。</p>
-<h3 id="maven-enforce-plugin工作的大体流程"><a href="#maven-enforce-plugin工作的大体流程" class="headerlink" title="maven-enforce-plugin工作的大体流程"></a>maven-enforce-plugin工作的大体流程</h3><p>通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息（maven-project）,在设定好的过滤规则（EnforcerRule实现类）下检验整个客户工程。</p>
+        <p>之前在公司上线新项目时，发现线上日志没有打印，最后问题定位到日志相关的类冲突问题。于是这里介绍一个maven自带的插件：maven-enforce-plugin，我们可以通过自己设定的规则进行检验多种冲突。</p>
+<h3 id="maven-enforce-plugin工作的大体流程"><a href="#maven-enforce-plugin工作的大体流程" class="headerlink" title="maven-enforce-plugin工作的大体流程"></a>maven-enforce-plugin工作的大体流程</h3><p>通过maven自带的IoC容器plexus给该插件处理类注入当前的客户工程对应的工程信息实例（MavenProject）,在设定好的过滤规则（EnforcerRule实现类）下检验整个客户工程。</p>
 <h3 id="解决的问题："><a href="#解决的问题：" class="headerlink" title="解决的问题："></a>解决的问题：</h3><h4 id="第一类冲突：同一个Jar包出现了多个不同版本"><a href="#第一类冲突：同一个Jar包出现了多个不同版本" class="headerlink" title="第一类冲突：同一个Jar包出现了多个不同版本"></a>第一类冲突：同一个Jar包出现了多个不同版本</h4><p>　　随着Jar包迭代升级，我们所依赖的开源的或公司内部的Jar包工具都会存在若干不同的版本，而版本升级自然就避免不了类的方法签名变更，甚至于类名的更替，而我们当前的应用程序往往依赖特定版本1.0.0的某个类M，由于maven的传递依赖而导致同一个Jar包出现了多个版本（1.0.0， 1.0.1，1.0.2），当maven的仲裁机制选择了错误的版本时，而恰好类 M在该版本中被去掉了，或者方法签名改了，导致应用程序因找不到所需的类 M或找不到类 M中的特定方法，就会出现第一类冲突问题。</p>
 <p>　　<br>可总结出该冲突问题发生的以下三个必要条件：</p>
 <p>~&gt; 1. 由于maven的传递依赖导致依赖树中出现了同一个Jar包的多个版本</p>
 <p>~&gt; 2. 该Jar包的多个版本之间存在接口差异，如类名更替，方法签名更替等，且应用程序依赖了其中有变更的类或方法</p>
 <p>~&gt; 3. maven的仲裁机制选择了错误的版本</p>
 <h4 id="此插件如何检测第一种冲突呢？"><a href="#此插件如何检测第一种冲突呢？" class="headerlink" title="此插件如何检测第一种冲突呢？"></a>此插件如何检测第一种冲突呢？</h4><p>扫描客户工程所有依赖的jar包，记录每个jar包对应的版本号，如果同一个jar包出现了多个不同的version，则说明发生了第一类冲突</p>
-<h4 id="第二类冲突：同一个类出现在多个不同Jar包中"><a href="#第二类冲突：同一个类出现在多个不同Jar包中" class="headerlink" title="第二类冲突：同一个类出现在多个不同Jar包中"></a>第二类冲突：同一个类出现在多个不同Jar包中</h4><p>　　同样的类出现在了应用程序所依赖的两个及以上的不同Jar包中，这会导致什么问题呢？我们知道，同一个类加载器对于同一个类只会加载一次（多个不同类加载器就另说了，这也是解决Jar包冲突的一个思路，后面会谈到），那么当一个类出现在了多个Jar包中，假设有A 、 B 、 C 等，由于Jar包依赖的路径长短、声明的先后顺序或文件系统的文件加载顺序等原因，类加载器首先从Jar包A 中加载了该类后，就不会加载其余Jar包中的这个类了，那么问题来了：如果应用程序此时需要的是Jar包 B 中的类版本，并且该类在Jar包A 和 B 中有差异（方法不同、成员不同等等），而JVM却加载了Jar包 A 的中的类版本，与期望不一致，自然就会出现各种诡异的问题。</p>
-<pre><code>同一个类 M 出现在了多个依赖的Jar包中，为了叙述方便，假设还是两个： A 和 B；Jar包 A 和 B 中的类 M 有差异，无论是方法签名不同也好，成员变量不同也好，只要可以造成实际加载的类的行为和期望不一致都行。如果说Jar包A 和 B 中的类M完全一样，那么类加载器无论先加载哪个Jar包，得到的都是同样版本的类 M ，不会有任何影响，也就不会出现Jar包冲突带来的诡异问题。
-</code></pre><p>如果说加载的类 M 不是所期望的版本，即加载了错误的Jar包，就可能会导致出现ClassNotFoundException。</p>
+<h4 id="第二类冲突：同一个类出现在多个不同Jar包中"><a href="#第二类冲突：同一个类出现在多个不同Jar包中" class="headerlink" title="第二类冲突：同一个类出现在多个不同Jar包中"></a>第二类冲突：同一个类出现在多个不同Jar包中</h4><p>  同样的类出现在了应用程序所依赖的两个及以上的不同Jar包中，这会导致什么问题呢？我们知道，同一个类加载器对于同一个类只会加载一次（多个不同类加载器就另说了，这也是解决Jar包冲突的一个思路），那么当一个类出现在了多个Jar包中，假设有A 、 B 、 C 等，由于Jar包依赖的路径长短、声明的先后顺序或文件系统的文件加载顺序等原因，类加载器首先从Jar包A 中加载了该类后，就不会加载其余Jar包中的这个类了，那么问题来了：如果应用程序此时需要的是Jar包 B 中的类版本，并且该类在Jar包A 和 B 中有差异（方法不同、成员不同等等），而JVM却加载了Jar包 A 的中的类版本，与期望不一致，自然就会出现各种诡异的问题。<br>  同一个类 M 出现在了多个依赖的Jar包中，为了叙述方便，假设还是两个： A 和 B；Jar包 A 和 B 中的类 M 有差异，无论是方法签名不同也好，成员变量不同也好，只要可以造成实际加载的类的行为和期望不一致都行。如果说Jar包A 和 B 中的类M完全一样，那么类加载器无论先加载哪个Jar包，得到的都是同样版本的类 M ，不会有任何影响，也就不会出现Jar包冲突带来的诡异问题。<br>如果说加载的类 M 不是所期望的版本，即加载了错误的Jar包，就可能会导致出现ClassNotFoundException。</p>
 <h4 id="此插件怎么检测第二种冲突呢？"><a href="#此插件怎么检测第二种冲突呢？" class="headerlink" title="此插件怎么检测第二种冲突呢？"></a>此插件怎么检测第二种冲突呢？</h4><p>通过扫描Jar包中的class，记录每个class对应的Jar包列表，如果有多个即是冲突了</p>
 <h3 id="插件使用方式"><a href="#插件使用方式" class="headerlink" title="插件使用方式"></a>插件使用方式</h3><pre><code>&lt;build&gt;
   &lt;plugin&gt;
@@ -353,11 +351,11 @@
   &lt;/plugin&gt;
 &lt;/plugins&gt;
 </code></pre><p>  </p>
-<h3 id="插件工作流程"><a href="#插件工作流程" class="headerlink" title="插件工作流程"></a>插件工作流程</h3><p>（1）创建plexus容器，并启动容器</p>
-<p>（2）通过Maven Project Builder读取客户工程pom.xml文件，生成MavenProject和MavenSession</p>
-<p>（3）容器在对应的生命周期创建配置的maven-enforcer-plugin Mojo，进行依赖注入MavenProject、MavenSession等属性</p>
-<p>（4）设定规则（EnforcerRule），maven-enforcer-plugin按照规则配置项对工程进行检测</p>
-<p>（5）生成检测报告，并打印信息</p>
+<h3 id="插件工作流程"><a href="#插件工作流程" class="headerlink" title="插件工作流程"></a>插件工作流程</h3><p>（1）创建plexus容器，并启动容器。</p>
+<p>（2）通过Maven Project Builder读取客户工程pom.xml文件，生成MavenProject和MavenSession。</p>
+<p>（3）容器在对应的生命周期创建配置的maven-enforcer-plugin Mojo，进行依赖注入MavenProject、MavenSession等属性。</p>
+<p>（4）设定规则（EnforcerRule），maven-enforcer-plugin按照规则配置项对工程进行检测。</p>
+<p>（5）生成检测报告，并打印信息。</p>
 <hr>
 <h3 id="From-rubic"><a href="#From-rubic" class="headerlink" title="From ^ _ ^ rubic"></a>From ^ _ ^ rubic</h3><hr>
 
