@@ -330,7 +330,81 @@
       
         
           
-            
+            <h2 id="1-简要描述"><a href="#1-简要描述" class="headerlink" title="1. 简要描述"></a>1. 简要描述</h2><p>disruptor是一个高性能的队列，最初是应用在<a href="https://martinfowler.com/articles/lmax.html" target="_blank" rel="noopener">LMAX</a>架构中。我们可以把disruptor用在生产者-消费者问题以获取高效地处理和高吞吐量。现在disruptor版本已稳定在3.0，请尽量使用版本3.0，因为低版本的api和3.0几乎不兼容，并且版本3.0提供更多生产者-消费者设计<br>支持。</p>
+<h2 id="2-我们不一样：阻塞队列-vs-Disruptor"><a href="#2-我们不一样：阻塞队列-vs-Disruptor" class="headerlink" title="2. 我们不一样：阻塞队列 vs Disruptor"></a>2. 我们不一样：阻塞队列 vs Disruptor</h2><h4 id="稳-稳健派：BlockingQueue"><a href="#稳-稳健派：BlockingQueue" class="headerlink" title="(稳) 稳健派：BlockingQueue"></a>(稳) 稳健派：BlockingQueue</h4><p>阻塞队列是一个稳健派的设计：阻塞队列是一个FIFO队列，生产者(Producer)往队列里发布(publish)一件物料时，消费者(Consumer)能获得通知；如果没有物料时，消费者被堵塞，直到生产者发布了新的物料，防止生产者生产速度过快，导致内存溢出（OOM）。</p>
+<p>平常我们实现生产者-消费者模型时，一般会选用阻塞队列ArrayBlockingQueue来实现。当数据量上升到模型无法处理时，这时阻塞队列的“稳健”操作开始带来了负面影响：</p>
+<h5 id="1-锁是慢的"><a href="#1-锁是慢的" class="headerlink" title="(1) 锁是慢的"></a>(1) 锁是慢的</h5><p>~ &gt;<br>~ &gt; 加锁时：线程会因为获取不到锁而被阻塞挂起；</p>
+<p>~ &gt; 锁释放时：阻塞的线程会被唤醒；而整个过程具有大量的时间消耗。</p>
+<pre><code>· 
+</code></pre><p><img src="https://raw.githubusercontent.com/RubicPhil/picture/master/LinkedBlockingQueue.png" alt="image"></p>
+<h4 id="快-别人家的孩子：Disruptor"><a href="#快-别人家的孩子：Disruptor" class="headerlink" title="(快) 别人家的孩子：Disruptor"></a>(快) 别人家的孩子：Disruptor</h4><p>Disruptor不仅同样能完成阻塞队列的功能，而且Disruptor还能做的更多。</p>
+<p>disruptor：<br>~ &gt;<br>~ &gt;- 无锁设计，通过CPU指令级别的CAS操作保证线程安全，同时大大提高处理速度；<br>~ &gt;- 提供了良好的并发编程接口，适应多种场景：消费者既可以并行处理，也可以消费同一个，还可以相互依赖消费；<br>~ &gt;- 底层的极度优化：缓冲行解决伪共享问题、预先分配内存空间等。</p>
+<p><img src="https://raw.githubusercontent.com/RubicPhil/picture/master/disruptor.png" alt="image"></p>
+<p>disruptor使用RingBuffer实现，而RingBuffer相比于链表的优势有：</p>
+<p>（1）RingBuffer使用数组实现，访问比链表快，并且由于CPU缓冲行会加载相邻数据的特性，数组的元素在硬件级别是会被预加载的。但同时由于CPU缓冲行的这个特性从而导致了伪共享问题，不过disruptor使用了缓冲行填充技术解决伪共享。</p>
+<p>（2）RingBuffer可以预先分配堆内存空间，数组元素保证一直有效。当生产者生产物料，只需要拿到预先创建好的RingBuffer元素实例直接进行设置，从而减少gc的产生。</p>
+<h4 id="ArrayBlockingQueue-vs-Disruptor"><a href="#ArrayBlockingQueue-vs-Disruptor" class="headerlink" title="ArrayBlockingQueue vs Disruptor"></a>ArrayBlockingQueue vs Disruptor</h4><p>在disruptor官方说明文档中，它做了一个对比实验：<br>    · 生产者生产物料后等待1微秒，然后消费者消费物料；重复执行5000万次<br>    · CPU ： 2.2Ghz Core i7-2720QM<br>    · OS：    Ubuntu 11.04<br>| | Array Blocking Queue (ns) | Disruptor (ns) | |:|:——————————|:——————-| | Mean Latency | 32,757 | 52 | | 99% observations less than | 2,097,152 | 128 | | 99.99% observations less than | 4,194,304 | 8,192 |</p>
+<h2 id="3-该如何使用你，我的disruptor？"><a href="#3-该如何使用你，我的disruptor？" class="headerlink" title="3. 该如何使用你，我的disruptor？"></a>3. 该如何使用你，我的disruptor？</h2><p>在这次search-sync组件的优化过程，使用disruptor替换LinkedBlockingQueue实现Single-Producer ~ Multi-Consumer模型</p>
+<h4 id="模型实现"><a href="#模型实现" class="headerlink" title="模型实现"></a>模型实现</h4><blockquote>
+<ul>
+<li>自定义Event，作为生产者-消费者模型中的物料;同时实现EventFactory&lt;?&gt;接口，作为物料的生成工具。</li>
+<li>自定义生产者模型，批量从数据源获取”原料”组装放入物料中。</li>
+<li>自定义消费者模型，实现WorkHandler&lt;?&gt;接口，作为自定义Event的处理器。</li>
+<li>Disruptor采用WorkPool的消费模式，保证消费者不会重复消费物料。</li>
+</ul>
+</blockquote>
+<h4 id="部分实现代码"><a href="#部分实现代码" class="headerlink" title="部分实现代码"></a>部分实现代码</h4><pre><code>// 定义物料
+public class BatchIdEvent {
+
+    private List&lt;Long&gt; batch;
+
+    public BatchIdEvent() { this.batch = new ArrayList&lt;&gt;(); }
+
+    public List&lt;Long&gt; getBatch() { return batch; }
+
+    public void setBatch(List&lt;Long&gt; batch) { this.batch = batch; }
+
+    public static final EventFactory EVENT_FACTORY = () -&gt; new BatchIdEvent();
+}
+
+// 自定义生产者模型
+class DisruptorProducer  {
+    ...
+
+    public void onData(List&lt;Long&gt; batchIds) {
+        long sequence = ringBuffer.next();
+
+        BatchIdEvent event = ringBuffer.get(sequence);
+        event.setBatch(batchIds);
+
+        ringBuffer.publish(sequence);
+
+    }
+
+}
+
+
+// 实现WorkHandler&lt;?&gt; 接口，实现消费者模型
+class EventConsumer implements WorkHandler&lt;BatchIdEvent&gt; {
+    ... 
+
+    @Override
+    public void onEvent(BatchIdEvent batchIdEvent) throws Exception {
+        doJob(batchIdEvent.getBatch());
+        ...
+    }
+}
+
+
+// 使用WorkPool的消费方式，并启动disruptor
+for (int i = 0; i &lt; consumerNum; i++) {
+    AtomicInteger count = new AtomicInteger(0);
+    eventConsumers[i] = new EventConsumer(count);
+}
+
+disruptor.handleEventsWithWorkerPool(eventConsumers);
+disruptor.start();
+</code></pre>
           
         
       
